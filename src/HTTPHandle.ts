@@ -1,5 +1,4 @@
 import express, { RouterOptions, type Application, type Request, type Response } from 'express'
-import pkg from '../package.json'
 import Core from './Core'
 import Route from './Route'
 import type { Db } from 'mongodb'
@@ -113,12 +112,12 @@ export default class HTTPHandle {
     }
   }
 
-  initiateHealthCheckRoute (): this {
+  initiateHealthCheckRoute (version: string): this {
     this.app.get('/health', (req, res) => {
       return this.createResponse(req, res, {
         status: 'ok',
         timestamp: new Date().toISOString(),
-        version: pkg.version,
+        version: version,
         lifespan: process.uptime()
       }, null)
     })

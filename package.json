@@ -2,9 +2,11 @@
   "name": "codebase",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "rm -r ./dist && tsup --onSuccess \"cp -a src/types.d.ts dist\""
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
     "mongodb": "^6.5.0",
     "rate-limiter-flexible": "^5.0.0",
     "sinon": "^17.0.1",
+    "tsup": "^8.0.2",
     "y-types": "github:shaynlink/y-types"
   },
   "devDependencies": {
