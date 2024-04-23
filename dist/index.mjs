@@ -76,6 +76,7 @@ var _HTTPHandle = class _HTTPHandle {
       maxAge: 86400,
       preflightContinue: false
     };
+    this.app.use(express.json());
     this.app.options("*", cors(this.corsOptions));
     this.app.use(cors(this.corsOptions));
     this.app.use(helmet());
