@@ -26,22 +26,25 @@ declare class Route {
     createMiddleware(descriptor: string, middleware: RequestHandler): RequestHandler;
 }
 
+interface ErrorResponseComplance {
+    message: string;
+    name: string;
+    extra?: Record<string, any>;
+}
 /**
  * Create custom error for response
  */
 declare class ErrorResponse extends Error {
     status: number;
+    extra?: Record<string, any>;
     /**
      * @param {string} message
      */
-    constructor(message: string, status?: number);
+    constructor(message: string, status?: number, extra?: Record<string, any>);
     /**
      * @returns Return response version
      */
-    exportToResponse(): {
-        message: string;
-        name: string;
-    };
+    exportToResponse(): ErrorResponseComplance;
     static transformToResponseError(error: Error): ErrorResponse;
 }
 type NullableError<Extra extends Error> = null | Extra | Error;

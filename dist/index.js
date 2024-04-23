@@ -38,20 +38,25 @@ var _ErrorResponse = class _ErrorResponse extends Error {
   /**
    * @param {string} message
    */
-  constructor(message, status = 400) {
+  constructor(message, status = 400, extra) {
     super(message);
     this.status = 400;
     this.name = "ErrorResponse";
     this.status = status;
+    this.extra = extra;
   }
   /**
    * @returns Return response version
    */
   exportToResponse() {
-    return {
+    const exporter = {
       message: this.message,
       name: this.name
     };
+    if (this.extra) {
+      exporter.extra = this.extra;
+    }
+    return exporter;
   }
   static transformToResponseError(error) {
     return new _ErrorResponse(error.message);
