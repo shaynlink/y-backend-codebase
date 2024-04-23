@@ -72,16 +72,12 @@ export default class HTTPHandle {
       preflightContinue: false,
     }
 
+    this.app.use(express.json())
     this.app.options('*', cors(this.corsOptions))
     this.app.use(cors(this.corsOptions))
     this.app.use(helmet())
 
     this.app.disable('x-powered-by')
-
-    // // Rate-Limit
-    // this.app.use((req, res, next) => {
-
-    // })
   }
 
   /**
