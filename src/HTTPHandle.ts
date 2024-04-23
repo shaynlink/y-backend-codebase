@@ -130,6 +130,14 @@ export default class HTTPHandle {
     return this
   }
 
+  initiateNotFoundRoute (): this {
+    this.app.use((req, res) => {
+      return this.createResponse(req, res, null, new ErrorResponse('Not Found', 404))
+    })
+
+    return this
+  }
+
   createRoute (basePath: string, cb: (route: Route, database: typeof mongoose | null) => void, routerOptions?: RouterOptions) {
     const route = new Route(this.core, routerOptions);
 

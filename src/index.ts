@@ -1,9 +1,17 @@
 import Core from './Core'
 
-export * from './services/HTTPService'
-export * from './HTTPHandle'
-export * from './Route'
-export * from './services/DBService'
-export * from './services/KMSService'
+import HTTPService from './services/HTTPService'
+import HTTPHandle, { ErrorResponse } from './HTTPHandle'
+import Route from './Route'
+import DBService from './services/DBService'
+import KMSService from './services/KMSService'
 
-export default Core
+export {
+  Core as default,
+  HTTPService,
+  HTTPHandle,
+  ErrorResponse,
+  Route,
+  DBService,
+  KMSService
+}

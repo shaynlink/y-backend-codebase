@@ -1,11 +1,12 @@
 import { Debugger } from 'debug';
-import { ClientOptions, SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { ClientOptions } from 'google-gax';
 import { MongoOptions } from 'mongodb';
 import mongoose, { MongooseOptions } from 'mongoose';
 import http from 'node:http';
 import { Router, RequestHandler, RouterOptions, Application, Request, Response } from 'express';
 import { CorsOptions } from 'cors';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 interface CoreOptions {
   usePriorityEnvVars?: boolean
@@ -66,6 +67,7 @@ declare class HTTPHandle {
      */
     createResponse<R extends Record<string, any> | null = null>(req: Request, res: Response, result: R, error: NullableError<ErrorResponse>, transform?: (req: Request, res: Response, result: R, error: NullableError<ErrorResponse>) => void): void;
     initiateHealthCheckRoute(version: string): this;
+    initiateNotFoundRoute(): this;
     createRoute(basePath: string, cb: (route: Route, database: typeof mongoose | null) => void, routerOptions?: RouterOptions): Route;
 }
 
@@ -118,4 +120,4 @@ declare class Core {
     static instanciateFromEnv(): Core;
 }
 
-export { ErrorResponse, Core as default };
+export { DBService, ErrorResponse, HTTPHandle, HTTPService, KMSService, Route, Core as default };

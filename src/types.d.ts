@@ -1,5 +1,5 @@
-import type { ClientOptions } from '@google-cloud/secret-manager';
-import type { MongoClient, MongoOptions } from 'mongodb';
+import type { ClientOptions } from 'google-gax'
+import type { MongoOptions } from 'mongodb';
 import type { MongooseOptions } from 'mongoose';
 
 export interface CoreOptions {

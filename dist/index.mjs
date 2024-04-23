@@ -115,6 +115,12 @@ var _HTTPHandle = class _HTTPHandle {
     });
     return this;
   }
+  initiateNotFoundRoute() {
+    this.app.use((req, res) => {
+      return this.createResponse(req, res, null, new ErrorResponse("Not Found", 404));
+    });
+    return this;
+  }
   createRoute(basePath, cb, routerOptions) {
     const route = new Route(this.core, routerOptions);
     cb(route, this.core.DBService.client);
@@ -309,10 +315,12 @@ var _Core = class _Core {
 };
 __name(_Core, "Core");
 var Core = _Core;
-
-// src/index.ts
-var src_default = Core;
 export {
+  DBService,
   ErrorResponse,
-  src_default as default
+  HTTPHandle,
+  HTTPService,
+  KMSService,
+  Route,
+  Core as default
 };

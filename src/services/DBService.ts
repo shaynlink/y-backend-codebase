@@ -1,11 +1,5 @@
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import Core from '../Core';
-// import {
-//   MongoClient,
-//   type MongoClientOptions,
-//   ServerApiVersion,
-//   type Db
-// } from 'mongodb';
 import mongoose, { type MongooseOptions } from 'mongoose';
 import { ErrorResponse } from '../HTTPHandle';
 import { MongoOptions } from 'mongodb';
