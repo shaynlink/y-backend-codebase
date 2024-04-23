@@ -6,29 +6,42 @@ import helmet from 'helmet';
 import type { RateLimiterMongo } from 'rate-limiter-flexible'
 import mongoose from 'mongoose'
 
+export interface ErrorResponseComplance {
+  message: string,
+  name: string,
+  extra?: Record<string, any>
+}
+
 /**
  * Create custom error for response
  */
 export class ErrorResponse extends Error {
-  status: number = 400
+  public status: number = 400
+  public extra?: Record<string, any>
   /**
    * @param {string} message
    */
-  constructor (message: string, status = 400) {
+  constructor (message: string, status = 400, extra?: Record<string, any>) {
     super(message)
 
     this.name = 'ErrorResponse'
     this.status = status
+    this.extra = extra
   }
 
   /**
    * @returns Return response version
    */
-  exportToResponse (): { message: string, name: string } {
-    return {
+  exportToResponse (): ErrorResponseComplance {
+    const exporter: ErrorResponseComplance = {
       message: this.message,
       name: this.name
     }
+    if (this.extra) {
+      exporter.extra = this.extra
+    }
+
+    return exporter;
   }
 
   static transformToResponseError (error: Error): ErrorResponse {
