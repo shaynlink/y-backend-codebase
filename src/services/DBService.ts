@@ -1,12 +1,14 @@
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import Core from '../Core';
-import {
-  MongoClient,
-  type MongoClientOptions,
-  ServerApiVersion,
-  type Db
-} from 'mongodb';
+// import {
+//   MongoClient,
+//   type MongoClientOptions,
+//   ServerApiVersion,
+//   type Db
+// } from 'mongodb';
+import mongoose, { type MongooseOptions } from 'mongoose';
 import { ErrorResponse } from '../HTTPHandle';
+import { MongoOptions } from 'mongodb';
 
 function splitPEM(pemContent: string): { certificate: string | undefined, privateKey: string | undefined } | null {
   const pemSectionRegex = /-----BEGIN [^-]+-----[^-]*-----END [^-]+-----/g;
@@ -28,8 +30,7 @@ function splitPEM(pemContent: string): { certificate: string | undefined, privat
 export default class DBService {
   public readonly core: Core
   private certificate: string | Uint8Array | null;
-  public client: MongoClient | null;
-  public db: Db | null;
+  public client: typeof mongoose | null;
 
   constructor(core: Core) {
     this.core = core;
@@ -37,8 +38,6 @@ export default class DBService {
     this.certificate = null;
 
     this.client = null;
-
-    this.db = null;
   }
 
   getSecretFromKMS(keyName: string) {
@@ -46,8 +45,8 @@ export default class DBService {
   }
 
   async createClient() {
-    const mongoOptions: MongoClientOptions = this.core.options.mongoClientOptions ?? {};
-
+    const mongoOptions: MongoOptions & MongooseOptions = this.core.options.mongoClientOptions ?? <MongoOptions & MongooseOptions>{};
+    
     if (this.certificate) {
       const splitedPem = splitPEM(this.certificate.toString());
       if (!splitedPem) {
@@ -55,48 +54,46 @@ export default class DBService {
       }
       const { certificate, privateKey } = splitedPem;
       // mongoOptions.tls = true;
-      mongoOptions.cert = certificate;
+      mongoOptions.cert = certificate;  
       mongoOptions.key = privateKey;
+      mongoOptions.dbName = this.core.options.mongoDatabaseName;
     }
 
-    mongoOptions.serverApi = ServerApiVersion.v1;
-
-    this.client = new MongoClient(
+    this.client = await mongoose.connect(
       this.core.options.mongoURI,
       mongoOptions
-    );
+    )
 
-    this.client.on('connectionReady', () => {
+    this.client.connection.on('connected', () => {
       this.core.debug('Connected to MongoDB');
-    });
-
-    this.client.on('connectionClosed', () => {
-      this.core.debug('Disconnected from MongoDB');
-    });
-
-    this.client.on('connectionCreated', () => {
-      this.core.debug('Connection to MongoDB created');
-    });
-
-    await this.client.connect();
-
-    this.db = this.client.db(this.core.options.mongoDatabaseName)
-
-    this.core.HTTPService.handle.app.locals.database = this.db;
-
-    this.core.HTTPService.handle.rateLimit = new RateLimiterMongo({
-      storeClient: this.core.DBService.db,
-      points: 10,
-      duration: 1,
     })
 
-    this.core.HTTPService.handle.app.use('/', async (req, res, next) => {
-      this.core.debug('Middleware: (*) Rate limit middleware')
+    this.client.connection.on('disconnected', () => {
+      this.core.debug('Disconnected from MongoDB');
+    
+    })
+
+    this.core.HTTPService.handle.app.locals.database = this.client;
+
+    this.core.HTTPService.handle.rateLimit = new RateLimiterMongo({
+      storeClient: this.client.connection,
+      points: 10,
+      duration: 3,
+    })
+
+    this.core.HTTPService.handle.app.use(async (req, res, next) => {
+      this.core.debug('Middleware: (*) Rate limit middleware : s%', req.ip || req.socket.remoteAddress || 'unknwon')
       try {
-        await this.core.HTTPService.handle.rateLimit?.consume(req.ip || req.socket.remoteAddress || 'unknwon', 1)
+        const rateLimitResponse = await this.core.HTTPService.handle.rateLimit?.consume(req.ip || req.socket.remoteAddress || 'unknwon', 2)
+
+        if (rateLimitResponse) {
+          res.setHeader('X-RateLimit-Limit', 10);
+          res.setHeader('X-RateLimit-Remaining', rateLimitResponse.remainingPoints);
+          res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitResponse.msBeforeNext).getTime() / 1000);
+        }
         next()
-      } catch (error) {
-        return this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse('Too many requests', 429))
+      } catch {
+        this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse('Too many requests', 429))
       }
     })
 

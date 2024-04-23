@@ -1,8 +1,9 @@
 import { Debugger } from 'debug';
 import { ClientOptions, SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { MongoOptions } from 'mongodb';
+import mongoose, { MongooseOptions } from 'mongoose';
 import http from 'node:http';
 import { Router, RequestHandler, RouterOptions, Application, Request, Response } from 'express';
-import { Db, MongoClient } from 'mongodb';
 import { CorsOptions } from 'cors';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 
@@ -11,7 +12,7 @@ interface CoreOptions {
   port?: string
   secretManagerServicClientOptions?: ClientOptions
   mongoURI: string;
-  mongoClientOptions?: MongoClientOptions;
+  mongoClientOptions?: MongooseOptions & MongoOptions;
   mongoDatabaseName: string;
 }
 
@@ -50,7 +51,7 @@ declare class HTTPHandle {
     readonly core: Core;
     readonly app: Application & {
         locals: {
-            database: Db;
+            database: typeof mongoose;
         };
     };
     readonly corsOptions: CorsOptions;
@@ -65,7 +66,7 @@ declare class HTTPHandle {
      */
     createResponse<R extends Record<string, any> | null = null>(req: Request, res: Response, result: R, error: NullableError<ErrorResponse>, transform?: (req: Request, res: Response, result: R, error: NullableError<ErrorResponse>) => void): void;
     initiateHealthCheckRoute(version: string): this;
-    createRoute(basePath: string, cb: (route: Route, database: Db | null) => void, routerOptions?: RouterOptions): Route;
+    createRoute(basePath: string, cb: (route: Route, database: typeof mongoose | null) => void, routerOptions?: RouterOptions): Route;
 }
 
 declare class HTTPService {
@@ -95,11 +96,10 @@ declare class KMSService {
 declare class DBService {
     readonly core: Core;
     private certificate;
-    client: MongoClient | null;
-    db: Db | null;
+    client: typeof mongoose | null;
     constructor(core: Core);
     getSecretFromKMS(keyName: string): void;
-    createClient(): Promise<MongoClient>;
+    createClient(): Promise<typeof mongoose>;
 }
 
 /**

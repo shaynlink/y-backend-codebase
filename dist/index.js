@@ -1,55 +1,21 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// src/index.ts
-var src_exports = {};
-__export(src_exports, {
-  ErrorResponse: () => ErrorResponse,
-  default: () => src_default
-});
-module.exports = __toCommonJS(src_exports);
+"use strict";Object.defineProperty(exports, "__esModule", {value: true}); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
 // src/Core.ts
-var import_debug = __toESM(require("debug"));
+var _debug = require('debug'); var _debug2 = _interopRequireDefault(_debug);
 
 // src/services/HTTPService.ts
-var import_node_http = __toESM(require("http"));
+var _http = require('http'); var _http2 = _interopRequireDefault(_http);
 
 // src/HTTPHandle.ts
-var import_express2 = __toESM(require("express"));
+var _express = require('express'); var _express2 = _interopRequireDefault(_express);
 
 // src/Route.ts
-var import_express = require("express");
-var Route = class {
+
+var _Route = class _Route {
   constructor(core, routerOptions) {
     this.core = core;
-    this.mapper = (0, import_express.Router)(routerOptions);
+    this.mapper = _express.Router.call(void 0, routerOptions);
     this.middlewares = /* @__PURE__ */ new Map();
   }
   setGlobalMiddleware(descriptor, middleware) {
@@ -62,11 +28,13 @@ var Route = class {
     };
   }
 };
+__name(_Route, "Route");
+var Route = _Route;
 
 // src/HTTPHandle.ts
-var import_cors = __toESM(require("cors"));
-var import_helmet = __toESM(require("helmet"));
-var ErrorResponse = class _ErrorResponse extends Error {
+var _cors = require('cors'); var _cors2 = _interopRequireDefault(_cors);
+var _helmet = require('helmet'); var _helmet2 = _interopRequireDefault(_helmet);
+var _ErrorResponse = class _ErrorResponse extends Error {
   /**
    * @param {string} message
    */
@@ -89,7 +57,9 @@ var ErrorResponse = class _ErrorResponse extends Error {
     return new _ErrorResponse(error.message);
   }
 };
-var HTTPHandle = class {
+__name(_ErrorResponse, "ErrorResponse");
+var ErrorResponse = _ErrorResponse;
+var _HTTPHandle = class _HTTPHandle {
   /**
    * @constructor
    * @param {Core} core
@@ -97,7 +67,7 @@ var HTTPHandle = class {
   constructor(core) {
     this.rateLimit = null;
     this.core = core;
-    this.app = (0, import_express2.default)();
+    this.app = _express2.default.call(void 0, );
     this.corsOptions = {
       origin: [/http(s)?:\/\/localhost:\d{3,5}/],
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -106,9 +76,9 @@ var HTTPHandle = class {
       maxAge: 86400,
       preflightContinue: false
     };
-    this.app.options("*", (0, import_cors.default)(this.corsOptions));
-    this.app.use((0, import_cors.default)(this.corsOptions));
-    this.app.use((0, import_helmet.default)());
+    this.app.options("*", _cors2.default.call(void 0, this.corsOptions));
+    this.app.use(_cors2.default.call(void 0, this.corsOptions));
+    this.app.use(_helmet2.default.call(void 0, ));
     this.app.disable("x-powered-by");
   }
   /**
@@ -121,7 +91,7 @@ var HTTPHandle = class {
       res.status((_a = error == null ? void 0 : error.status) != null ? _a : 400);
       transform == null ? void 0 : transform(req, res, result, error);
       res.json({
-        error: error instanceof ErrorResponse ? error : ErrorResponse.transformToResponseError(error).exportToResponse(),
+        error: error instanceof ErrorResponse ? error.exportToResponse() : ErrorResponse.transformToResponseError(error).exportToResponse(),
         result: null
       });
     } else {
@@ -147,14 +117,16 @@ var HTTPHandle = class {
   }
   createRoute(basePath, cb, routerOptions) {
     const route = new Route(this.core, routerOptions);
-    cb(route, this.core.DBService.db);
+    cb(route, this.core.DBService.client);
     this.app.use(basePath, route.mapper);
     return route;
   }
 };
+__name(_HTTPHandle, "HTTPHandle");
+var HTTPHandle = _HTTPHandle;
 
 // src/services/HTTPService.ts
-var HTTPService = class {
+var _HTTPService = class _HTTPService {
   /**
    * @constructor
    */
@@ -167,7 +139,7 @@ var HTTPService = class {
    * @method createServer
    */
   createServer() {
-    this.server = import_node_http.default.createServer(this.handle.app);
+    this.server = _http2.default.createServer(this.handle.app);
     this.server.listen(
       this.core.options.port,
       () => {
@@ -183,13 +155,15 @@ var HTTPService = class {
     return this.server;
   }
 };
+__name(_HTTPService, "HTTPService");
+var HTTPService = _HTTPService;
 
 // src/services/KMSService.ts
-var import_secret_manager = require("@google-cloud/secret-manager");
-var KMSService = class {
+var _secretmanager = require('@google-cloud/secret-manager');
+var _KMSService = class _KMSService {
   constructor(core) {
     this.core = core;
-    this.client = new import_secret_manager.SecretManagerServiceClient(
+    this.client = new (0, _secretmanager.SecretManagerServiceClient)(
       this.core.options.secretManagerServicClientOptions
     );
     this.secrets = /* @__PURE__ */ new Map();
@@ -211,10 +185,12 @@ var KMSService = class {
     return this.secrets.get(keyName);
   }
 };
+__name(_KMSService, "KMSService");
+var KMSService = _KMSService;
 
 // src/services/DBService.ts
-var import_rate_limiter_flexible = require("rate-limiter-flexible");
-var import_mongodb = require("mongodb");
+var _ratelimiterflexible = require('rate-limiter-flexible');
+var _mongoose = require('mongoose'); var _mongoose2 = _interopRequireDefault(_mongoose);
 function splitPEM(pemContent) {
   const pemSectionRegex = /-----BEGIN [^-]+-----[^-]*-----END [^-]+-----/g;
   const pemSections = pemContent.match(pemSectionRegex);
@@ -228,12 +204,12 @@ function splitPEM(pemContent) {
     return null;
   }
 }
-var DBService = class {
+__name(splitPEM, "splitPEM");
+var _DBService = class _DBService {
   constructor(core) {
     this.core = core;
     this.certificate = null;
     this.client = null;
-    this.db = null;
   }
   getSecretFromKMS(keyName) {
     this.certificate = this.core.KMService.getSecret(keyName);
@@ -249,46 +225,48 @@ var DBService = class {
       const { certificate, privateKey } = splitedPem;
       mongoOptions.cert = certificate;
       mongoOptions.key = privateKey;
+      mongoOptions.dbName = this.core.options.mongoDatabaseName;
     }
-    mongoOptions.serverApi = import_mongodb.ServerApiVersion.v1;
-    this.client = new import_mongodb.MongoClient(
+    this.client = await _mongoose2.default.connect(
       this.core.options.mongoURI,
       mongoOptions
     );
-    this.client.on("connectionReady", () => {
+    this.client.connection.on("connected", () => {
       this.core.debug("Connected to MongoDB");
     });
-    this.client.on("connectionClosed", () => {
+    this.client.connection.on("disconnected", () => {
       this.core.debug("Disconnected from MongoDB");
     });
-    this.client.on("connectionCreated", () => {
-      this.core.debug("Connection to MongoDB created");
-    });
-    await this.client.connect();
-    this.db = this.client.db(this.core.options.mongoDatabaseName);
-    this.core.HTTPService.handle.app.locals.database = this.db;
-    this.core.HTTPService.handle.rateLimit = new import_rate_limiter_flexible.RateLimiterMongo({
-      storeClient: this.core.DBService.db,
+    this.core.HTTPService.handle.app.locals.database = this.client;
+    this.core.HTTPService.handle.rateLimit = new (0, _ratelimiterflexible.RateLimiterMongo)({
+      storeClient: this.client.connection,
       points: 10,
-      duration: 1
+      duration: 3
     });
-    this.core.HTTPService.handle.app.use("/", async (req, res, next) => {
+    this.core.HTTPService.handle.app.use(async (req, res, next) => {
       var _a2;
-      this.core.debug("Middleware: (*) Rate limit middleware");
+      this.core.debug("Middleware: (*) Rate limit middleware : s%", req.ip || req.socket.remoteAddress || "unknwon");
       try {
-        await ((_a2 = this.core.HTTPService.handle.rateLimit) == null ? void 0 : _a2.consume(req.ip || req.socket.remoteAddress || "unknwon", 1));
+        const rateLimitResponse = await ((_a2 = this.core.HTTPService.handle.rateLimit) == null ? void 0 : _a2.consume(req.ip || req.socket.remoteAddress || "unknwon", 2));
+        if (rateLimitResponse) {
+          res.setHeader("X-RateLimit-Limit", 10);
+          res.setHeader("X-RateLimit-Remaining", rateLimitResponse.remainingPoints);
+          res.setHeader("X-RateLimit-Reset", new Date(Date.now() + rateLimitResponse.msBeforeNext).getTime() / 1e3);
+        }
         next();
-      } catch (error) {
-        return this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse("Too many requests", 429));
+      } catch (e) {
+        this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse("Too many requests", 429));
       }
     });
     return this.client;
   }
 };
+__name(_DBService, "DBService");
+var DBService = _DBService;
 
 // src/Core.ts
-var debug = (0, import_debug.default)("codebase");
-var Core = class _Core {
+var debug = _debug2.default.call(void 0, "codebase");
+var _Core = class _Core {
   /**
    * @constructor
    */
@@ -329,10 +307,12 @@ var Core = class _Core {
     });
   }
 };
+__name(_Core, "Core");
+var Core = _Core;
 
 // src/index.ts
 var src_default = Core;
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  ErrorResponse
-});
+
+
+
+exports.ErrorResponse = ErrorResponse; exports.default = src_default;

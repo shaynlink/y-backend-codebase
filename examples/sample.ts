@@ -28,7 +28,7 @@ async function bootstrap() {
 
   const handle = core.HTTPService.handle;
 
-  handle.initiateHealthCheckRoute();
+  handle.initiateHealthCheckRoute('1.0.0');
 
   handle.createRoute('/', (route: Route) => {
     // Set middleware for each route endpoints

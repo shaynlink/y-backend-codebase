@@ -1,3 +1,6 @@
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+
 // src/Core.ts
 import createDebug from "debug";
 
@@ -9,7 +12,7 @@ import express from "express";
 
 // src/Route.ts
 import { Router } from "express";
-var Route = class {
+var _Route = class _Route {
   constructor(core, routerOptions) {
     this.core = core;
     this.mapper = Router(routerOptions);
@@ -25,11 +28,13 @@ var Route = class {
     };
   }
 };
+__name(_Route, "Route");
+var Route = _Route;
 
 // src/HTTPHandle.ts
 import cors from "cors";
 import helmet from "helmet";
-var ErrorResponse = class _ErrorResponse extends Error {
+var _ErrorResponse = class _ErrorResponse extends Error {
   /**
    * @param {string} message
    */
@@ -52,7 +57,9 @@ var ErrorResponse = class _ErrorResponse extends Error {
     return new _ErrorResponse(error.message);
   }
 };
-var HTTPHandle = class {
+__name(_ErrorResponse, "ErrorResponse");
+var ErrorResponse = _ErrorResponse;
+var _HTTPHandle = class _HTTPHandle {
   /**
    * @constructor
    * @param {Core} core
@@ -84,7 +91,7 @@ var HTTPHandle = class {
       res.status((_a = error == null ? void 0 : error.status) != null ? _a : 400);
       transform == null ? void 0 : transform(req, res, result, error);
       res.json({
-        error: error instanceof ErrorResponse ? error : ErrorResponse.transformToResponseError(error).exportToResponse(),
+        error: error instanceof ErrorResponse ? error.exportToResponse() : ErrorResponse.transformToResponseError(error).exportToResponse(),
         result: null
       });
     } else {
@@ -110,14 +117,16 @@ var HTTPHandle = class {
   }
   createRoute(basePath, cb, routerOptions) {
     const route = new Route(this.core, routerOptions);
-    cb(route, this.core.DBService.db);
+    cb(route, this.core.DBService.client);
     this.app.use(basePath, route.mapper);
     return route;
   }
 };
+__name(_HTTPHandle, "HTTPHandle");
+var HTTPHandle = _HTTPHandle;
 
 // src/services/HTTPService.ts
-var HTTPService = class {
+var _HTTPService = class _HTTPService {
   /**
    * @constructor
    */
@@ -146,10 +155,12 @@ var HTTPService = class {
     return this.server;
   }
 };
+__name(_HTTPService, "HTTPService");
+var HTTPService = _HTTPService;
 
 // src/services/KMSService.ts
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
-var KMSService = class {
+var _KMSService = class _KMSService {
   constructor(core) {
     this.core = core;
     this.client = new SecretManagerServiceClient(
@@ -174,13 +185,12 @@ var KMSService = class {
     return this.secrets.get(keyName);
   }
 };
+__name(_KMSService, "KMSService");
+var KMSService = _KMSService;
 
 // src/services/DBService.ts
 import { RateLimiterMongo } from "rate-limiter-flexible";
-import {
-  MongoClient,
-  ServerApiVersion
-} from "mongodb";
+import mongoose from "mongoose";
 function splitPEM(pemContent) {
   const pemSectionRegex = /-----BEGIN [^-]+-----[^-]*-----END [^-]+-----/g;
   const pemSections = pemContent.match(pemSectionRegex);
@@ -194,12 +204,12 @@ function splitPEM(pemContent) {
     return null;
   }
 }
-var DBService = class {
+__name(splitPEM, "splitPEM");
+var _DBService = class _DBService {
   constructor(core) {
     this.core = core;
     this.certificate = null;
     this.client = null;
-    this.db = null;
   }
   getSecretFromKMS(keyName) {
     this.certificate = this.core.KMService.getSecret(keyName);
@@ -215,46 +225,48 @@ var DBService = class {
       const { certificate, privateKey } = splitedPem;
       mongoOptions.cert = certificate;
       mongoOptions.key = privateKey;
+      mongoOptions.dbName = this.core.options.mongoDatabaseName;
     }
-    mongoOptions.serverApi = ServerApiVersion.v1;
-    this.client = new MongoClient(
+    this.client = await mongoose.connect(
       this.core.options.mongoURI,
       mongoOptions
     );
-    this.client.on("connectionReady", () => {
+    this.client.connection.on("connected", () => {
       this.core.debug("Connected to MongoDB");
     });
-    this.client.on("connectionClosed", () => {
+    this.client.connection.on("disconnected", () => {
       this.core.debug("Disconnected from MongoDB");
     });
-    this.client.on("connectionCreated", () => {
-      this.core.debug("Connection to MongoDB created");
-    });
-    await this.client.connect();
-    this.db = this.client.db(this.core.options.mongoDatabaseName);
-    this.core.HTTPService.handle.app.locals.database = this.db;
+    this.core.HTTPService.handle.app.locals.database = this.client;
     this.core.HTTPService.handle.rateLimit = new RateLimiterMongo({
-      storeClient: this.core.DBService.db,
+      storeClient: this.client.connection,
       points: 10,
-      duration: 1
+      duration: 3
     });
-    this.core.HTTPService.handle.app.use("/", async (req, res, next) => {
+    this.core.HTTPService.handle.app.use(async (req, res, next) => {
       var _a2;
-      this.core.debug("Middleware: (*) Rate limit middleware");
+      this.core.debug("Middleware: (*) Rate limit middleware : s%", req.ip || req.socket.remoteAddress || "unknwon");
       try {
-        await ((_a2 = this.core.HTTPService.handle.rateLimit) == null ? void 0 : _a2.consume(req.ip || req.socket.remoteAddress || "unknwon", 1));
+        const rateLimitResponse = await ((_a2 = this.core.HTTPService.handle.rateLimit) == null ? void 0 : _a2.consume(req.ip || req.socket.remoteAddress || "unknwon", 2));
+        if (rateLimitResponse) {
+          res.setHeader("X-RateLimit-Limit", 10);
+          res.setHeader("X-RateLimit-Remaining", rateLimitResponse.remainingPoints);
+          res.setHeader("X-RateLimit-Reset", new Date(Date.now() + rateLimitResponse.msBeforeNext).getTime() / 1e3);
+        }
         next();
-      } catch (error) {
-        return this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse("Too many requests", 429));
+      } catch {
+        this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse("Too many requests", 429));
       }
     });
     return this.client;
   }
 };
+__name(_DBService, "DBService");
+var DBService = _DBService;
 
 // src/Core.ts
 var debug = createDebug("codebase");
-var Core = class _Core {
+var _Core = class _Core {
   /**
    * @constructor
    */
@@ -295,6 +307,8 @@ var Core = class _Core {
     });
   }
 };
+__name(_Core, "Core");
+var Core = _Core;
 
 // src/index.ts
 var src_default = Core;

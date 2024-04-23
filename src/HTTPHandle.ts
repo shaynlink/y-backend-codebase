@@ -1,10 +1,10 @@
 import express, { RouterOptions, type Application, type Request, type Response } from 'express'
 import Core from './Core'
 import Route from './Route'
-import type { Db } from 'mongodb'
 import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import type { RateLimiterMongo } from 'rate-limiter-flexible'
+import mongoose from 'mongoose'
 
 /**
  * Create custom error for response
@@ -45,7 +45,7 @@ export default class HTTPHandle {
   public readonly core: Core
   public readonly app: Application & {
     locals: {
-      database: Db
+      database: typeof mongoose
     }
   }
   public readonly corsOptions: CorsOptions
@@ -59,7 +59,7 @@ export default class HTTPHandle {
 
     this.app = express() as unknown as Application & {
       locals: {
-        database: Db
+        database: typeof mongoose
       }
     }
 
@@ -74,9 +74,14 @@ export default class HTTPHandle {
 
     this.app.options('*', cors(this.corsOptions))
     this.app.use(cors(this.corsOptions))
-    this.app.use(helmet());
+    this.app.use(helmet())
 
     this.app.disable('x-powered-by')
+
+    // // Rate-Limit
+    // this.app.use((req, res, next) => {
+
+    // })
   }
 
   /**
@@ -98,7 +103,7 @@ export default class HTTPHandle {
       res.status((error as & { status?: number })?.status ?? 400)
       transform?.(req, res, result, error)
       res.json({
-        error: (error instanceof ErrorResponse ? error : ErrorResponse.transformToResponseError(error).exportToResponse()),
+        error: (error instanceof ErrorResponse ? error.exportToResponse() : ErrorResponse.transformToResponseError(error).exportToResponse()),
         result: null
       })
     } else {
@@ -125,10 +130,10 @@ export default class HTTPHandle {
     return this
   }
 
-  createRoute (basePath: string, cb: (route: Route, database: Db | null) => void, routerOptions?: RouterOptions) {
+  createRoute (basePath: string, cb: (route: Route, database: typeof mongoose | null) => void, routerOptions?: RouterOptions) {
     const route = new Route(this.core, routerOptions);
 
-    cb(route, this.core.DBService.db);
+    cb(route, this.core.DBService.client);
 
     this.app.use(basePath, route.mapper);
 
