@@ -67,29 +67,29 @@ export default class DBService {
     
     })
 
-    this.core.HTTPService.handle.app.locals.database = this.client;
+    // this.core.HTTPService.handle.app.locals.database = this.client;
 
-    this.core.HTTPService.handle.rateLimit = new RateLimiterMongo({
-      storeClient: this.client.connection,
-      points: 10,
-      duration: 3,
-    })
+    // this.core.HTTPService.handle.rateLimit = new RateLimiterMongo({
+    //   storeClient: this.client.connection,
+    //   points: 10,
+    //   duration: 3,
+    // })
 
-    this.core.HTTPService.handle.app.use(async (req, res, next) => {
-      this.core.debug('Middleware: (*) Rate limit middleware : s%', req.ip || req.socket.remoteAddress || 'unknwon')
-      try {
-        const rateLimitResponse = await this.core.HTTPService.handle.rateLimit?.consume(req.ip || req.socket.remoteAddress || 'unknwon', 2)
+    // this.core.HTTPService.handle.app.use(async (req, res, next) => {
+    //   this.core.debug('Middleware: (*) Rate limit middleware : s%', req.ip || req.socket.remoteAddress || 'unknwon')
+    //   try {
+    //     const rateLimitResponse = await this.core.HTTPService.handle.rateLimit?.consume(req.ip || req.socket.remoteAddress || 'unknwon', 2)
 
-        if (rateLimitResponse) {
-          res.setHeader('X-RateLimit-Limit', 10);
-          res.setHeader('X-RateLimit-Remaining', rateLimitResponse.remainingPoints);
-          res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitResponse.msBeforeNext).getTime() / 1000);
-        }
-        next()
-      } catch {
-        this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse('Too many requests', 429))
-      }
-    })
+    //     if (rateLimitResponse) {
+    //       res.setHeader('X-RateLimit-Limit', 10);
+    //       res.setHeader('X-RateLimit-Remaining', rateLimitResponse.remainingPoints);
+    //       res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateLimitResponse.msBeforeNext).getTime() / 1000);
+    //     }
+    //     next()
+    //   } catch {
+    //     this.core.HTTPService.handle.createResponse(req, res, null, new ErrorResponse('Too many requests', 429))
+    //   }
+    // })
 
     return this.client;
   }
